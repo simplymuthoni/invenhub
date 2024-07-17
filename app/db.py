@@ -6,7 +6,7 @@ from mariadb import Error
 from app import config
 import app
 
-app.Config["SQLALCHEMY_DATABASE_URI"] = "mariadb+mariadbconnector://mugo:Demo123@127.0.0.1:3306/hope"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mariadb+mariadbconnector://mugo:Demo123@127.0.0.1:3306/hope"
 
 db = SQLAlchemy(app)
 
