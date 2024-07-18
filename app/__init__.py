@@ -61,7 +61,8 @@ def create_app(config_name):
     # Register blueprints
     from app.users.routes import users
     app.register_blueprint(users)
-
+    from app.admin.routes import admin_blueprint
+    app.register_blueprint(admin_blueprint, url_prefix='/api/admin')
     # Swagger setup
     SWAGGER_URL = '/api/docs'
     API_URL = '/static/swagger.json'

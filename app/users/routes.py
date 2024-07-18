@@ -6,6 +6,7 @@ from app.schemas import UserSchema
 from flask_session import Session
 from flask_mail import Message
 from werkzeug.security import generate_password_hash
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import string
 import random
 import os
@@ -58,6 +59,43 @@ def register():
     mail.send(msg)
     
     return jsonify({'message': 'User registered successfully. Please check your email for the temporary password.'}), 201
+
+@users.route('/reset_password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    user = User.query.filter_by(username=data['username']).first()
+    if not user:
+        return jsonify(message="User not found"), 404
+
+    temporary_password = generate_temporary_password()
+    user.password = bcrypt.generate_password_hash(temporary_password).decode('utf-8')
+    db.session.commit()
+
+    msg = Message('Password Reset Request',
+                  recipients=[user.username])
+    msg.body = f'Your temporary password is: {temporary_password}\nPlease use it to log in and change your password immediately.'
+    mail.send(msg)
+
+    return jsonify(message="Temporary password sent to your email"), 200
+
+@users.route('/change_password', methods=['POST'])
+@jwt_required()
+def change_password():
+    data = request.get_json()
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user['username']).first()
+
+    if not user:
+        return jsonify(message="User not found"), 404
+
+    if not bcrypt.check_password_hash(user.password, data['old_password']):
+        return jsonify(message="Old password is incorrect"), 401
+
+    new_password_hashed = bcrypt.generate_password_hash(data['new_password']).decode('utf-8')
+    user.password = new_password_hashed
+    db.session.commit()
+
+    return jsonify(message="Password changed successfully"), 200
     
 @users.route('/login', methods=['POST'])
 def login():

@@ -34,6 +34,12 @@ def create_tables():
                             phone_number VARCHAR(12) NOT NULL,
                             address VARCHAR(30) NOT NULL);''')
         
+        conn.execute('''CREATE TABLE IF NOT EXISTS admin(
+                            adminid CHAR(36) PRIMARY KEY,
+                            email VARCHAR(20) NOT NULL,
+                            name VARCHAR(30) NOT NULL,
+                            password VARCHAR(10) NOT NULL);''')
+        
         conn.commit()
         conn.close()
 

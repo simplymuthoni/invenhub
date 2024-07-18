@@ -13,7 +13,7 @@ class User(db.Model):
     address = Column(String(30), unique=True, nullable=False)
     username = Column(String(20), unique=True, nullable=False)
     password = Column(String(128), nullable=False)
-
+    
     def __init__(self, name, phone_number, email, address, username, password):
         self.name = name
         self.phone_number = phone_number

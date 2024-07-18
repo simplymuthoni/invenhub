@@ -1,63 +1,32 @@
 // src/components/Register.js
 import React, { useState } from 'react';
-import axios from 'axios';
+import { register } from '../api/userApi';
+import { useHistory } from 'react-router-dom';
 
 const Register = () => {
-    const [user, setUser] = useState({
-        name: '',
-        phoneNumber: '',
-        email: '',
-        address: '',
-        username: '',
-    });
-
-    const [message, setMessage] = useState('');
+    const [user, setUser] = useState({ name: '', phone_number: '', email: '', address: '', username: '' });
+    const history = useHistory();
 
     const handleChange = (e) => {
-        setUser({
-            ...user,
-            [e.target.name]: e.target.value,
-        });
+        setUser({ ...user, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            const response = await axios.post('http://127.0.0.1:5000/api/users/register', user);
-            setMessage(response.data.message);
-        } catch (error) {
-            setMessage(error.response.data.message);
-        }
+        await register(user);
+        history.push('/login');
     };
 
     return (
-        <div>
-            <h2>Register</h2>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Name:</label>
-                    <input type="text" name="name" value={user.name} onChange={handleChange} required />
-                </div>
-                <div>
-                    <label>Phone Number:</label>
-                    <input type="text" name="phoneNumber" value={user.phoneNumber} onChange={handleChange} required />
-                </div>
-                <div>
-                    <label>Email:</label>
-                    <input type="email" name="email" value={user.email} onChange={handleChange} required />
-                </div>
-                <div>
-                    <label>Address:</label>
-                    <input type="text" name="address" value={user.address} onChange={handleChange} required />
-                </div>
-                <div>
-                    <label>Username:</label>
-                    <input type="text" name="username" value={user.username} onChange={handleChange} required />
-                </div>
-                <button type="submit">Register</button>
-            </form>
-            {message && <p>{message}</p>}
-        </div>
+        <form onSubmit={handleSubmit}>
+            <h1>Register</h1>
+            <input name="name" value={user.name} onChange={handleChange} placeholder="Name" required />
+            <input name="phone_number" value={user.phone_number} onChange={handleChange} placeholder="Phone Number" required />
+            <input name="email" value={user.email} onChange={handleChange} placeholder="Email" required />
+            <input name="address" value={user.address} onChange={handleChange} placeholder="Address" required />
+            <input name="username" value={user.username} onChange={handleChange} placeholder="Username" required />
+            <button type="submit">Register</button>
+        </form>
     );
 };
 
