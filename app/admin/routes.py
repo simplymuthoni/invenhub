@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import logging
 from flasgger import swag_from
 from flask_session import Session
+from app.models import db, ClothingItem
 
 admin_blueprint = Blueprint('admin', __name__, url_prefix='/api/admin')
 
@@ -153,6 +154,46 @@ def login_admin():
     session['admin_id'] = admin.adminid
     session['admin_email'] = admin.email
     return jsonify({"message": "Login successful", "admin": admin.to_dict()}), 200
+
+@admin_blueprint('/items', methods=['GET'])
+def get_items():
+    items = ClothingItem.query.all()
+    return jsonify([item.as_dict() for item in items])
+
+@admin_blueprint('/items', methods=['POST'])
+def add_item():
+    data = request.get_json()
+    new_item = ClothingItem(
+        name=data['name'],
+        category=data['category'],
+        size=data['size'],
+        color=data['color'],
+        price=data['price'],
+        stock=data['stock']
+    )
+    db.session.add(new_item)
+    db.session.commit()
+    return jsonify(new_item.as_dict()), 201
+
+@admin_blueprint('/items/<int:id>', methods=['PUT'])
+def update_item(id):
+    data = request.get_json()
+    item = ClothingItem.query.get_or_404(id)
+    item.name = data['name']
+    item.category = data['category']
+    item.size = data['size']
+    item.color = data['color']
+    item.price = data['price']
+    item.stock = data['stock']
+    db.session.commit()
+    return jsonify(item.as_dict())
+
+@admin_blueprint('/items/<int:id>', methods=['DELETE'])
+def delete_item(id):
+    item = ClothingItem.query.get_or_404(id)
+    db.session.delete(item)
+    db.session.commit()
+    return '', 204
 
 @admin_blueprint.route('/logout', methods=['POST'])
 def logout_admin():
