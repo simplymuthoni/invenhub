@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar h2 {
+            text-align: center;
+            padding: 1em;
+            background-color: #1a252f;
+            margin: 0;
+        }
+        .sidebar a {
+            padding: 1em;
+            color: #ecf0f1;
+            text-decoration: none;
+            display: block;
+        }
+        .sidebar a:hover {
+            background-color: #34495e;
+        }
+        .main-content {
+            flex-grow: 1;
+            background-color: #ecf0f1;
+            padding: 1em;
+        }
+        .nav-bar {
+            background-color: #34495e;
+            padding: 1em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-bar h1 {
+            color: #ecf0f1;
+            margin: 0;
+        }
+        .nav-bar .nav-links a {
+            color: #ecf0f1;
+            margin: 0 1em;
+            text-decoration: none;
+        }
+        .nav-bar .nav-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Admin Portal</h2>
+        <a href="#dashboard" onclick="loadDashboard()"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="#users" onclick="loadUsers()"><i class="fas fa-users"></i> Users</a>
+        <a href="#settings" onclick="loadSettings()"><i class="fas fa-cogs"></i> Settings</a>
+        <a href="#reports" onclick="loadReports()"><i class="fas fa-chart-line"></i> Reports</a>
+        <a href="#logout" onclick="logoutAdmin()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+    <div class="main-content">
+        <div class="nav-bar">
+            <h1 id="page-title">Dashboard</h1>
+            <div class="nav-links">
+                <a href="#profile">Profile</a>
+                <a href="#notifications">Notifications</a>
+            </div>
+        </div>
+        <div class="content" id="content">
+            <h2>Welcome to the Admin Portal</h2>
+            <p>Use the navigation links on the left to manage the portal.</p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/admin';
+
+        const loadDashboard = async () => {
+            document.getElementById('page-title').textContent = 'Dashboard';
+            document.getElementById('content').innerHTML = `
+                <h2>Welcome to the Admin Portal</h2>
+                <p>Use the navigation links on the left to manage the portal.</p>
+            `;
+        };
+
+        const loadUsers = async () => {
+            document.getElementById('page-title').textContent = 'Users';
+            const response = await fetch(`http:http://127.0.0.1:5000/api/admin/user_details`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const users = await response.json();
+            document.getElementById('content').innerHTML = `
+                <h2>User List</h2>
+                <ul>${users.map(user => `<li>${user.name} (${user.email})</li>`).join('')}</ul>
+            `;
+        };
+
+        const loadSettings = () => {
+            document.getElementById('page-title').textContent = 'Settings';
+            document.getElementById('content').innerHTML = `
+                <h2>Settings</h2>
+                <p>Settings content goes here.</p>
+            `;
+        };
+
+        const loadReports = async () => {
+            document.getElementById('page-title').textContent = 'Reports';
+            const response = await fetch(`${API_URL}/reports`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const reports = await response.json();
+            document.getElementById('content').innerHTML = `
+                <h2>Reports</h2>
+                <p>Purchases: ${reports.purchases}</p>
+                <p>Total Profit: ${reports.total_profit}</p>
+            `;
+        };
+
+        const logoutAdmin = async () => {
+            const response = await fetch(`${API_URL}/logout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const result = await response.json();
+            alert(result.message);
+            window.location.reload();
+        };
+
+        // Initial load
+        loadDashboard();
+    </script>
+</body>
+</html>

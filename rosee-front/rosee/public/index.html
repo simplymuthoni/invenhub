@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rosee Thrifts</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* styles.css */
+
+
+    body, html {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  
+}
+
+.logo h1 {
+  margin: 0;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  gap: 30px;
+  margin: 0px;
+  padding: 30px;
+  align-items: end;
+  flex-direction: row;
+  content: right;
+}
+
+nav ul li {
+  margin: 5px;
+  width: 250px;
+  padding-right: 0%;
+  align-items: end;
+  shape-margin: 0%;
+  border-color: darkred;
+}
+
+
+nav ul li a {
+  text-decoration: none;
+  color: #000;
+}
+
+.main-banner {
+  position: relative;
+  height: 90vh;
+  background: url('/path/to/your/image.jpeg') no-repeat center center/cover;
+}
+
+.banner-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  text-align: center;
+}
+
+.banner-content h2 {
+  font-size: 3rem;
+  margin: 0;
+}
+
+.how-it-works {
+  padding: 50px 20px;
+  text-align: center;
+  background-color: #f9f9f9;
+}
+
+.how-it-works h2 {
+  font-size: 2rem;
+  margin-bottom: 30px;
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.step {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  max-width: 250px;
+}
+
+.step h3 {
+  margin-top: 0;
+}
+
+.step p {
+  margin: 10px 0 0;
+}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <div class="logo">
+        <h1>Rosee Thrifts</h1>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#">Shop Now</a></li>
+          <li><a href="#">Sign In</a></li>
+          <li><a href="#">Sign Up</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <div >
+      <h2>Welcome to Rosee Thrifts</h2>
+        <p>Your one-stop shop for thrift clothing. Enjoy browsing and shopping!</p>
+      </div>
+    </div>
+    <div class="how-it-works">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <h3>Step 1</h3>
+          <p>Browse our curated collection of unique thrift items.</p>
+        </div>
+        <div class="step">
+          <h3>Step 2</h3>
+          <p>Add your favorite items to your cart and proceed to checkout.</p>
+        </div>
+        <div class="step">
+          <h3>Step 3</h3>
+          <p>Choose your preferred payment method and complete the purchase.</p>
+        </div>
+        <div class="step">
+          <h3>Step 4</h3>
+          <p>Enjoy your thrifted treasures delivered right to your doorstep!</p>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
