@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, Blueprint, session, url_for
 from flasgger import Swagger
 from app.models import User, ClothingItem, Cart, Payment, Packaging, Arrival, Feedback
-from app import mail, db, bcrypt
+from app import mail, bcrypt
 from app.schemas import UserSchema
 from flask_session import Session
 from flask_mail import Message
@@ -16,29 +16,16 @@ from sqlalchemy import func, update
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 from flask_mail import Mail, Message
+from app.extensions import db
+app=Flask(__name__)
+swagger = Swagger(app)
+mail = Mail(app)
+s = URLSafeTimedSerializer(os.getenv("SECRET_KEY"))
+
+rosee_blueprint = Blueprint('rosee', __name__, url_prefix='/api/rosee')
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
-
-app = Flask(__name__)
-swagger = Swagger(app)
-
-# Initialize Flask-Session
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  
-Session(app)
-jwt = JWTManager(app)  # Initialize JWTManager
-
-# Initialize Flask-Mail
-app.config["MAIL_SERVER"] = "smtp.gmail.com"
-app.config["MAIL_PORT"] = 587
-app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
-app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
-app.config["MAIL_USE_TLS"] = True
-app.config["MAIL_USE_SSL"] = False
-mail = Mail(app)
-s = URLSafeTimedSerializer(os.getenv("SECRET_KEY"))
 
 def generate_temporary_password(length=8):
     characters = string.ascii_letters + string.digits + string.punctuation
@@ -56,10 +43,9 @@ def getLoginDetails():
         noOfItems = 0
     return noOfItems
 
-@app.route("/")
 
 # Homepage Route
-@app.route('/', methods=['GET'])
+@rosee_blueprint.route('/', methods=['GET'])
 def homepage():
     """
     Homepage
@@ -70,7 +56,7 @@ def homepage():
     """
     return jsonify({'message': 'Welcome to Rosee Thrifts '}), 200
 
-@app.route('/register', methods=['POST'])
+@rosee_blueprint.route('/register', methods=['POST'])
 def register():
     """
     Register a new user
@@ -129,7 +115,7 @@ def register():
     
     return jsonify({'message': 'User registered successfully. Please check your email for the temporary password.'}), 201
 
-@app.route('/login', methods=['POST'])
+@rosee_blueprint.route('/login', methods=['POST'])
 def login():
     """
     Login a user
@@ -169,7 +155,7 @@ def login():
     
     return jsonify({'message': 'Login successful', 'access_token': access_token}), 200
 
-@app.route('/reset_password', methods=['POST'])
+@rosee_blueprint.route('/reset_password', methods=['POST'])
 def reset_password():
     """
     Reset user password
@@ -206,7 +192,7 @@ def reset_password():
     return jsonify({'message': 'Password reset successful'}), 200
 
 # How It Works Route
-@app.route('/how-it-works', methods=['GET'])
+@rosee_blueprint.route('/how-it-works', methods=['GET'])
 def how_it_works():
     """
     How it works
@@ -226,7 +212,7 @@ def how_it_works():
     }), 200
 
 # Select Clothes Route
-@app.route('/items', methods=['GET'])
+@rosee_blueprint.route('/items', methods=['GET'])
 def get_items():
     """
     Get all clothing items
@@ -239,7 +225,7 @@ def get_items():
     return jsonify([item.as_dict() for item in items]), 200
 
 # Add to Cart Route
-@app.route('/cart', methods=['POST'])
+@rosee_blueprint.route('/cart', methods=['POST'])
 def add_to_cart():
     """
     Add item to cart
@@ -275,7 +261,7 @@ def add_to_cart():
     return jsonify({'message': f'Added {quantity} of {item.name} to the cart.'}), 201
 
 # Display Cart Route
-@app.route('/cart', methods=['GET'])
+@rosee_blueprint.route('/cart', methods=['GET'])
 def display_cart():
     """
     Display all cart items
@@ -297,7 +283,7 @@ def display_cart():
     return jsonify(cart_details), 200
 
 # Remove Cart Item Route
-@app.route('/cart/<int:cart_item_id>', methods=['DELETE'])
+@rosee_blueprint.route('/cart/<int:cart_item_id>', methods=['DELETE'])
 def remove_cart_item(cart_item_id):
     """
     Remove item from cart
@@ -317,7 +303,7 @@ def remove_cart_item(cart_item_id):
     
     return jsonify({'message': 'Item removed from cart.'}), 204
 
-@app.route('/payment', methods=['POST'])
+@rosee_blueprint.route('/payment', methods=['POST'])
 def create_payment():
     """
     Create a new payment
@@ -371,7 +357,7 @@ def create_payment():
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
-@app.route('/payment/<int:id>', methods=['GET'])
+@rosee_blueprint.route('/payment/<int:id>', methods=['GET'])
 def get_payment(id):
     """
     Get a payment by ID
@@ -401,7 +387,7 @@ def get_payment(id):
         'payment_date': payment.payment_date
     }), 200
 
-@app.route('/payment/<int:id>', methods=['PUT'])
+@rosee_blueprint.route('/payment/<int:id>', methods=['PUT'])
 def update_payment(id):
     """
     Update a payment by ID
@@ -453,7 +439,7 @@ def update_payment(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
-@app.route('/payment/<int:id>', methods=['DELETE'])
+@rosee_blueprint.route('/payment/<int:id>', methods=['DELETE'])
 def delete_payment(id):
     """
     Delete a payment by ID
@@ -484,7 +470,7 @@ def delete_payment(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
     
-@app.route('/payment/success', methods=['POST'])
+@rosee_blueprint.route('/payment/success', methods=['POST'])
 def payment_success():
     data = request.get_json()
     
@@ -507,7 +493,7 @@ def payment_success():
     
     return jsonify({'message': 'Payment processed successfully. Please provide packaging details and arrival time/date.'}), 201
 
-@app.route('/payment/packaging', methods=['POST'])
+@rosee_blueprint.route('/payment/packaging', methods=['POST'])
 def add_packaging_details():
     data = request.get_json()
     
@@ -526,7 +512,7 @@ def add_packaging_details():
     
     return jsonify({'message': 'Packaging details added successfully.'}), 201
 
-@app.route('/payment/arrival', methods=['POST'])
+@rosee_blueprint.route('/payment/arrival', methods=['POST'])
 def add_arrival_details():
     data = request.get_json()
     
@@ -545,46 +531,46 @@ def add_arrival_details():
     
     return jsonify({'message': 'Arrival details added successfully.'}), 201
     
-# Route to handle forgotten password
-@app.route('/forgot_password', methods=['POST'])
-def forgot_password():
-    data = request.get_json()
-    email = data.get('email')
-    user = User.query.filter_by(email=email).first()
-    if user:
-        token = s.dumps(email, salt='password-reset-salt')
-        link = url_for('users.reset_password', token=token, _external=True)
+# # Route to handle forgotten password
+# @rosee_blueprint.route('/forgot_password', methods=['POST'])
+# def forgot_password():
+#     data = request.get_json()
+#     email = data.get('email')
+#     user = User.query.filter_by(email=email).first()
+#     if user:
+#         token = s.dumps(email, salt='password-reset-salt')
+#         link = url_for('users.reset_password', token=token, _external=True)
 
-        msg = Message('Password Reset Request', sender=os.getenv('MAIL_USERNAME'), recipients=[email])
-        msg.body = f'Your password reset link is: {link}'
-        mail.send(msg)
+#         msg = Message('Password Reset Request', sender=os.getenv('MAIL_USERNAME'), recipients=[email])
+#         msg.body = f'Your password reset link is: {link}'
+#         mail.send(msg)
 
-        return jsonify({'message': 'Password reset link has been sent to your email.'}), 200
-    else:
-        return jsonify({'message': 'Email not found.'}), 404
+#         return jsonify({'message': 'Password reset link has been sent to your email.'}), 200
+#     else:
+#         return jsonify({'message': 'Email not found.'}), 404
 
-# Route to reset the password
-@app.route('/reset_password/<token>', methods=['POST'])
-def reset_password(token):
-    try:
-        email = s.loads(token, salt='password-reset-salt', max_age=3600)
-    except SignatureExpired:
-        return jsonify({'message': 'The token is expired.'}), 400
-    except BadTimeSignature:
-        return jsonify({'message': 'Invalid token.'}), 400
+# # Route to reset the password
+# @rosee_blueprint.route('/reset_password/<token>', methods=['POST'])
+# def reset_password(token):
+#     try:
+#         email = s.loads(token, salt='password-reset-salt', max_age=3600)
+#     except SignatureExpired:
+#         return jsonify({'message': 'The token is expired.'}), 400
+#     except BadTimeSignature:
+#         return jsonify({'message': 'Invalid token.'}), 400
 
-    data = request.get_json()
-    new_password = data.get('new_password')
-    hashed_password = generate_password_hash(new_password)
+#     data = request.get_json()
+#     new_password = data.get('new_password')
+#     hashed_password = generate_password_hash(new_password)
 
-    user = User.query.filter_by(email=email).first()
-    user.password = hashed_password
-    db.session.commit()
+#     user = User.query.filter_by(email=email).first()
+#     user.password = hashed_password
+#     db.session.commit()
 
-    return jsonify({'message': 'Password has been reset successfully.'}), 200
+#     return jsonify({'message': 'Password has been reset successfully.'}), 200
 
 # Route to update user details
-@app.route('/update_user', methods=['PUT'])
+@rosee_blueprint.route('/update_user', methods=['PUT'])
 def update_user():
     data = request.get_json()
     user_id = data.get('id')
@@ -603,7 +589,7 @@ def update_user():
 
     return jsonify({'message': 'User details updated successfully.'}), 200
 
-@app.route('/feedback', methods=['POST'])
+@rosee_blueprint.route('/feedback', methods=['POST'])
 def give_feedback():
     data = request.get_json()
 
@@ -620,7 +606,7 @@ def give_feedback():
 
     return jsonify({'message': 'Feedback submitted successfully.'}), 201
 
-@app.route('/logout', methods=['POST'])
+@rosee_blueprint.route('/logout', methods=['POST'])
 def logout():
     """
     User logout
@@ -633,7 +619,7 @@ def logout():
     session.pop('user_email', None)
     return jsonify({"message": "Logout successful"}), 200
 
-@app.route('/protected', methods=['GET'])
+@rosee_blueprint.route('/protected', methods=['GET'])
 @jwt_required()
 def protected():
     """

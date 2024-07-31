@@ -1,20 +1,17 @@
 from flask import Blueprint, request, jsonify, session
 from app.schemas import AdminSchema
-from app import db
-from app.admin.models import Admin
+from app.extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
 from flasgger import swag_from
 from flask_session import Session
-from app.models import User, ClothingItem, Cart, Payment, Delivery, GoodsReceivedNote
+from app.models import User, ClothingItem, Cart, Payment, Delivery, GoodsReceivedNote, Admin, PurchaseOrder,Invoice
 from datetime import datetime
-
-
-admin_blueprint = Blueprint('admin', __name__, url_prefix='/api/admin')
 
 admin_schema = AdminSchema()
 admins_schema = AdminSchema(many=True)
 
+admin_blueprint = Blueprint('admin', __name__, url_prefix='/api/admin')
 
 @admin_blueprint.route('/register', methods=['POST'])
 @swag_from({
@@ -68,6 +65,7 @@ def register_admin():
     email = data.get('email')
     name = data.get('name')
     password = data.get('password')
+    adminid = data.get('adminid')
 
     logging.debug(f"Received data - Email: {email}, Name: {name}, Password: {password}")
 
@@ -153,8 +151,8 @@ def login_admin():
 
     admin = Admin.query.filter_by(email=email).first()
 
-    session['admin_id'] = admin.adminid
-    session['admin_email'] = admin.email
+    session['adminid'] = admin.adminid
+
     return jsonify({"message": "Login successful", "admin": admin.to_dict()}), 200
 
 @admin_blueprint.route('/list', methods=['GET'])
@@ -220,7 +218,7 @@ def get_user_details():
 # Route to track clothes quantity
 @admin_blueprint.route('/clothes_quantity', methods=['GET'])
 def get_clothes_quantity():
-    clothes = Clothes.query.all()
+    clothes = ClothingItem.query.all()
     clothes_quantity = [{
         'id': item.id,
         'name': item.name,
@@ -266,7 +264,7 @@ def generate_income_statement():
 @admin_blueprint.route('/balance_sheet', methods=['GET'])
 def balance_sheet():
     # Simplified example
-    total_assets = db.session.query(db.func.sum(Clothes.price * Clothes.quantity)).scalar()
+    total_assets = db.session.query(db.func.sum(ClothingItem.price * ClothingItem.quantity)).scalar()
     total_liabilities = db.session.query(db.func.sum(Payment.amount)).scalar()  # This should be adjusted based on actual liabilities
     equity = total_assets - total_liabilities
 

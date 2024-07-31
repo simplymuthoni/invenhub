@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, Float
-from app import db
+from .extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Column, Integer, String, Enum
 from flask import flash
@@ -9,7 +9,6 @@ from datetime import datetime
 from sqlalchemy.ext.declarative import declarative_base
 import uuid
 
-db = SQLAlchemy()
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -22,7 +21,10 @@ class User(db.Model):
     username = Column(String(20), unique=True, nullable=False)
     password = Column(String(128), nullable=False)
     password_reset_required = db.Column(db.Boolean, default=True)
+
     cart = db.relationship('Cart', backref='buyer', lazy=True)
+
+    feedbacks = db.relationship('Feedback', back_populates='user')
 
     def __init__(self, name, phone_number, email, address, username, password):
         self.name = name
@@ -67,6 +69,17 @@ class ClothingItem(db.Model):
     price = Column(Float, nullable=False)
     stock = Column(Integer, nullable=False)
 
+    def as_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'category': self.category,
+            'size': self.size,
+            'color': self.color,
+            'price': self.price,
+            'stock': self.stock
+        }
+
 class Cart(db.Model):
 
     __tablename__= 'cart'
@@ -102,12 +115,16 @@ class Payment(db.Model):
 
 class Packaging(db.Model):
 
+    __tablename__ = 'packaging'
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_id = db.Column(db.Integer, db.ForeignKey('payment.id'), nullable=False)
     packaging_type = db.Column(db.String(50), nullable=False)
     packaging_instructions = db.Column(db.Text, nullable=True)
 
 class Arrival(db.Model):
+
+    __tablename__='arrival'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_id = db.Column(db.Integer, db.ForeignKey('payment.id'), nullable=False)
@@ -115,19 +132,23 @@ class Arrival(db.Model):
     arrival_date = db.Column(db.Date, nullable=False)
 
 class Feedback(db.Model):
+    __tablename__ ='feedback'
+
     id = db.Column(db.String(36), primary_key=True, default=str(uuid.uuid4()))
     user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     feedback_text = db.Column(db.Text, nullable=False)
     feedback_date = db.Column(db.DateTime, default=datetime.utcnow)
 
+    user = db.relationship('User', back_populates='feedbacks')
+
 class Admin(db.Model):
 
     __tablename__ = 'admin'
     
-    adminid = db.Column(Integer, primary_key=True)
-    email = Column(String(150), unique=True, nullable=False)
-    name = Column(String(150), nullable=False)
-    password = Column(String(255), nullable=False)
+    adminid = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    name = db.Column(db.String(150), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -145,10 +166,12 @@ class Admin(db.Model):
             "adminid": self.adminid,
             "email": self.email,
             "name": self.name,
-            "password": self.password
+            # "password": self.password
         }
     
 class Delivery(db.Model):
+
+    __tablename__='delivery'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
@@ -157,6 +180,7 @@ class Delivery(db.Model):
     assigned_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 class Employee(db.Model):
+
     __tablename__ = 'employees'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -210,12 +234,16 @@ class Goods(db.Model):
 
 class PurchaseOrder(db.Model):
 
+    __tablename__='purchaseorder'
+
     id = db.Column(db.Integer, primary_key=True)
     supplier = db.Column(db.String(50), nullable=False)
     order_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     total_amount = db.Column(db.Float, nullable=False)
 
 class GoodsReceivedNote(db.Model):
+
+    __tablename__='goodsreceivednote'
 
     id = db.Column(db.Integer, primary_key=True)
     purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_order.id'), nullable=False)
@@ -224,6 +252,8 @@ class GoodsReceivedNote(db.Model):
 
 class Invoice(db.Model):
     
+    __tablename__='invoice'
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)

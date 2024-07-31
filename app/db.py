@@ -1,27 +1,20 @@
-import os
 import mariadb
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from mariadb import Error
 
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "mariadb+mariadbconnector://mugo:Demo123@127.0.0.1:3306/hope"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+SQLALCHEMY_DATABASE_URI = "mariadb+mariadbconnector://mugo:Demo123@127.0.0.1:3306/hope"
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-db = SQLAlchemy(app)
+db = SQLAlchemy()
 
 def create_connection():
+    
     conn = None
     try:
-        conn = mariadb.connect(
-            user="mugo",
-            password="Demo123",
-            host="127.0.0.1",
-            port=3306,
-            database="hope"
-        )
+        conn = mariadb.connect(db)
     except Error as e:
-        print(f"Error: {e}")
+        print(e)
     return conn
 
 def create_tables():
@@ -79,8 +72,6 @@ def create_tables():
         conn.close()
 
 def init_db():
+
     create_tables()
 
-if __name__ == "__main__":
-    init_db()
-    app.run(debug=True)
