@@ -1,27 +1,34 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import HomePage from './components/HomePage';
-import Register from './components/Register';
-import Login from './components/Login';
-import Cart from './components/Cart';
-import Payment from './components/Payment';
-import Feedback from './components/Feedback';
+import AppNavbar from './components/Shared/Navbar';
+import HomePage from './components/Home/Home';
+import ItemList from './components/Items/ItemList';
+import Cart from './components/Cart/Cart';
+import Login from './components/Auth/Login';
+import OAuthCallback from './components/Auth/OAuthCallback';
+import Register from './components/Auth/Register';
+import Payment from './components/Payment/Payment';
+import Footer from './components/Shared/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
+
 
 function App() {
   return (
     <Router>
       <div>
+        <AppNavbar />
         <Routes>
           <Route path="/" exact component={HomePage} />
           <Route path="/register" component={Register} />
-          <Route path="/login" component={Login} />
+          <Route path="/items" component={ItemList} />
           <Route path="/cart" component={Cart} />
+          <Route path="/login/:provider" component={Login} />
+          <Route path="/callback/:provider" component={OAuthCallback} />
           <Route path="/payment" component={Payment} />
-          <Route path="/feedback" component={Feedback} />
           <ProtectedRoute path="/protected" component={ProtectedComponent} />
         </Routes>
+        <Footer/>
       </div>
     </Router>
   );

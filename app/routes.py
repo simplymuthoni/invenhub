@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Blueprint, session, url_for
+from flask import Flask, request, jsonify, Blueprint, session, url_for, redirect
 from flasgger import Swagger
 from app.models import User, ClothingItem, Cart, Payment, Packaging, Arrival, Feedback
 from app import mail, bcrypt
@@ -11,21 +11,60 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 import string
 import random
 import os
-from flask_login import login_user, current_user, logout_user, login_required
+from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user,login_required
 from sqlalchemy import func, update
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 from flask_mail import Mail, Message
 from app.extensions import db
+from authlib.integrations.flask_client import OAuth
 app=Flask(__name__)
 swagger = Swagger(app)
 mail = Mail(app)
 s = URLSafeTimedSerializer(os.getenv("SECRET_KEY"))
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+oauth = OAuth(app)
 
 rosee_blueprint = Blueprint('rosee', __name__, url_prefix='/api/rosee')
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
+
+# Configure OAuth providers
+oauth.register(
+    name='google',
+    client_id='YOUR_GOOGLE_CLIENT_ID',
+    client_secret='YOUR_GOOGLE_CLIENT_SECRET',
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    access_token_params=None,
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    authorize_params=None,
+    api_base_url='https://www.googleapis.com/oauth2/v1/',
+    userinfo_endpoint='https://www.googleapis.com/oauth2/v1/userinfo',
+    client_kwargs={'scope': 'openid email profile'},
+)
+
+oauth.register(
+    name='microsoft',
+    client_id='YOUR_MICROSOFT_CLIENT_ID',
+    client_secret='YOUR_MICROSOFT_CLIENT_SECRET',
+    access_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    authorize_url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+    api_base_url='https://graph.microsoft.com/v1.0/',
+    userinfo_endpoint='https://graph.microsoft.com/v1.0/me',
+    client_kwargs={'scope': 'User.Read'},
+)
+
+oauth.register(
+    name='apple',
+    client_id='YOUR_APPLE_CLIENT_ID',
+    client_secret='YOUR_APPLE_CLIENT_SECRET',
+    access_token_url='https://appleid.apple.com/auth/token',
+    authorize_url='https://appleid.apple.com/auth/authorize',
+    api_base_url='https://appleid.apple.com',
+    client_kwargs={'scope': 'name email'},
+)
 
 def generate_temporary_password(length=8):
     characters = string.ascii_letters + string.digits + string.punctuation
@@ -56,140 +95,48 @@ def homepage():
     """
     return jsonify({'message': 'Welcome to Rosee Thrifts '}), 200
 
-@rosee_blueprint.route('/register', methods=['POST'])
-def register():
-    """
-    Register a new user
-    ---
-    parameters:
-      - in: body
-        name: body
-        schema:
-          type: object
-          required:
-            - name
-            - phone_number
-            - email
-            - address
-            - username
-          properties:
-            name:
-              type: string
-            phone_number:
-              type: string
-            email:
-              type: string
-            address:
-              type: string
-            username:
-              type: string
-    responses:
-      201:
-        description: User registered successfully
-      400:
-        description: Invalid input
-    """
-    data = request.get_json()
-    
-    name = data.get('name')
-    phone_number = data.get('phone_number')
-    email = data.get('email')
-    address = data.get('address')
-    username = data.get('username')
-    
-    # Generate temporary password
-    temp_password = generate_temporary_password()
-    hashed_password = bcrypt.generate_password_hash(temp_password).decode('utf-8')
-    
-    # Create new user
-    new_user = User(name=name, phone_number=phone_number, email=email, address=address, username=username, password=hashed_password)
-    
-    # Add new user to the database
-    db.session.add(new_user)
-    db.session.commit()
-    
-    # Send email with temporary password
-    msg = Message('Your Account Registration', sender=os.getenv('MAIL_USERNAME'), recipients=[email])
-    msg.body = f'Hello {username},\n\nYour account has been created successfully. Your temporary password is: {temp_password}\nPlease login and change your password.'
-    mail.send(msg)
-    
-    return jsonify({'message': 'User registered successfully. Please check your email for the temporary password.'}), 201
+@rosee_blueprint.route('/login/<provider>')
+def oauth_login(provider):
+    oauth_provider = oauth.create_client(provider)
+    redirect_uri = url_for('oauth_callback', provider=provider, _external=True)
+    return oauth_provider.authorize_redirect(redirect_uri)
 
-@rosee_blueprint.route('/login', methods=['POST'])
-def login():
-    """
-    Login a user
-    ---
-    parameters:
-      - in: body
-        name: body
-        schema:
-          type: object
-          required:
-            - username
-            - password
-          properties:
-            username:
-              type: string
-            password:
-              type: string
-    responses:
-      200:
-        description: Login successful
-      401:
-        description: Invalid credentials
-      403:
-        description: Password reset required
-    """
-    data = request.get_json()
-    user = User.query.filter_by(username=data['username']).first()
+@rosee_blueprint.route('/callback/<provider>')
+def oauth_callback(provider):
+    oauth_provider = oauth.create_client(provider)
+    token = oauth_provider.authorize_access_token()
+    user_info = oauth_provider.parse_id_token(token)
 
-    if user is None or not check_password_hash(user.password, data['password']):
-        return jsonify({'message': 'Invalid credentials'}), 401
-    
-    if user.password_reset_required:
-        return jsonify({'message': 'Password reset required'}), 403
-    
-    # Create JWT token
-    access_token = create_access_token(identity={'username': user.username, 'email': user.email})
-    
-    return jsonify({'message': 'Login successful', 'access_token': access_token}), 200
+    email = user_info['email']
+    user = User.query.filter_by(email=email).first()
 
-@rosee_blueprint.route('/reset_password', methods=['POST'])
-def reset_password():
-    """
-    Reset user password
-    ---
-    parameters:
-      - in: body
-        name: body
-        schema:
-          type: object
-          required:
-            - username
-            - new_password
-          properties:
-            username:
-              type: string
-            new_password:
-              type: string
-    responses:
-      200:
-        description: Password reset successful
-      404:
-        description: User not found
-    """
-    data = request.get_json()
-    user = User.query.filter_by(username=data['username']).first()
+    if not user:
+        user = User(
+            email=email,
+            username=user_info.get('name', email.split('@')[0])
+        )
+        if provider == 'google':
+            user.google_id = user_info['sub']
+        elif provider == 'microsoft':
+            user.microsoft_id = user_info['sub']
+        elif provider == 'apple':
+            user.apple_id = user_info['sub']
+        db.session.add(user)
+        db.session.commit()
 
-    if user is None:
-        return jsonify({'message': 'User not found'}), 404
-    
-    user.password = generate_password_hash(data['new_password'])
-    user.password_reset_required = False
-    db.session.commit()
+    login_user(user)
+    return redirect(url_for('dashboard'))
 
-    return jsonify({'message': 'Password reset successful'}), 200
+@rosee_blueprint.route('/dashboard')
+def dashboard():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+    return f'Hello, {current_user.username}!'
+
+@rosee_blueprint.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 # How It Works Route
 @rosee_blueprint.route('/how-it-works', methods=['GET'])
@@ -605,20 +552,6 @@ def give_feedback():
     db.session.commit()
 
     return jsonify({'message': 'Feedback submitted successfully.'}), 201
-
-@rosee_blueprint.route('/logout', methods=['POST'])
-def logout():
-    """
-    User logout
-    ---
-    responses:
-      200:
-        description: Logout successful
-    """
-    session.pop('user_id', None)
-    session.pop('user_email', None)
-    return jsonify({"message": "Logout successful"}), 200
-
 @rosee_blueprint.route('/protected', methods=['GET'])
 @jwt_required()
 def protected():

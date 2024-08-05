@@ -13,49 +13,28 @@ import uuid
 class User(db.Model):
     __tablename__ = 'user'
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = Column(String(30), unique=True, nullable=False)
-    phone_number = Column(String(12))
-    email = Column(String(30), unique=True, nullable=False)
-    address = Column(String(30), unique=True, nullable=False)
-    username = Column(String(20), unique=True, nullable=False)
-    password = Column(String(128), nullable=False)
-    password_reset_required = db.Column(db.Boolean, default=True)
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=True)
+    google_id = db.Column(db.String(200), nullable=True)
+    microsoft_id = db.Column(db.String(200), nullable=True)
+    apple_id = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     cart = db.relationship('Cart', backref='buyer', lazy=True)
 
     feedbacks = db.relationship('Feedback', back_populates='user')
-
-    def __init__(self, name, phone_number, email, address, username, password):
-        self.name = name
-        self.phone_number = phone_number
-        self.email = email
-        self.address = address
-        self.username = username
-        self.password = generate_password_hash(password)
-
-    def set_password(self, password):
-        self.password = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password, password)
-    
+  
     def add_to_cart(self,clothes_id):
         item_to_add = Cart(clothes_id=clothes_id, user_id=self.id)
         db.session.add(item_to_add)
         db.session.commit()
         flash('Your item has been added to your cart!', 'success')
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "username": self.username,
-            "name": self.name,
-            "phone_number": self.phone_number,
-            "email": self.email,
-            "address": self.address,
-            'password_reset_required': self.password_reset_required
-        }
+    def __repr__(self):
+        return f'<User {self.username}>'
 
 class ClothingItem(db.Model):
     
